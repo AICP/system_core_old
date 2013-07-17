@@ -170,6 +170,7 @@ static const struct android_id_info android_ids[] = {
     { "clat",          AID_CLAT, },
     { "loop_radio",    AID_LOOP_RADIO, },
     { "mediadrm",      AID_MEDIA_DRM, },
+    { "theme_man",     AID_THEMEMAN },
     { "package_info",  AID_PACKAGE_INFO, },
     { "sdcard_pics",   AID_SDCARD_PICS, },
     { "sdcard_av",     AID_SDCARD_AV, },
