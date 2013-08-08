@@ -319,7 +319,7 @@ int __android_log_buf_write(int bufID, int prio, const char *tag, const char *ms
         !strncmp(tag, "QC-QMI", 6) ||
         !strncmp(tag, "QC-ONCRPC", 9) ||
         !strncmp(tag, "QC-DSI", 6)
-        ) {
+        )) {
             bufID = LOG_ID_RADIO;
             // Inform third party apps/ril/radio.. to use Rlog or RLOG
             snprintf(tmp_tag, sizeof(tmp_tag), "use-Rlog/RLOG-%s", tag);
