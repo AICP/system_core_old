@@ -25,6 +25,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include <stdint.h>
 
 #include "sysdeps.h"
 #include "adb.h"
@@ -34,7 +35,7 @@
 
 #if !ADB_HOST
 #include <private/android_filesystem_config.h>
-#include <linux/capability.h>
+#include <sys/capability.h>
 #include <linux/prctl.h>
 #include <sys/mount.h>
 #else
@@ -46,6 +47,7 @@ ADB_MUTEX_DEFINE( D_lock );
 #endif
 
 int HOST = 0;
+int gListenAll = 0;
 
 static int auth_enabled = 0;
 
@@ -324,7 +326,7 @@ static void send_connect(atransport *t)
     send_packet(cp, t);
 }
 
-static void send_auth_request(atransport *t)
+void send_auth_request(atransport *t)
 {
     D("Calling send_auth_request\n");
     apacket *p;
@@ -401,6 +403,8 @@ static char *connection_state_name(atransport *t)
         return "device";
     case CS_OFFLINE:
         return "offline";
+    case CS_UNAUTHORIZED:
+        return "unauthorized";
     default:
         return "unknown";
     }
@@ -530,6 +534,7 @@ void handle_packet(apacket *p, atransport *t)
 
     case A_AUTH:
         if (p->msg.arg0 == ADB_AUTH_TOKEN) {
+            t->connection_state = CS_UNAUTHORIZED;
             t->key = adb_auth_nextkey(t->key);
             if (t->key) {
                 send_auth_response(p->data, p->msg.data_length, t);
@@ -701,7 +706,13 @@ int local_name_to_fd(const char *name)
     if(!strncmp("tcp:", name, 4)){
         int  ret;
         port = atoi(name + 4);
-        ret = socket_loopback_server(port, SOCK_STREAM);
+
+        if (gListenAll > 0) {
+            ret = socket_inaddr_any_server(port, SOCK_STREAM);
+        } else {
+            ret = socket_loopback_server(port, SOCK_STREAM);
+        }
+
         return ret;
     }
 #ifndef HAVE_WIN32_IPC  /* no Unix-domain sockets on Win32 */
@@ -722,24 +733,90 @@ int local_name_to_fd(const char *name)
     return -1;
 }
 
-static int remove_listener(const char *local_name, const char *connect_to, atransport* transport)
+// Write a single line describing a listener to a user-provided buffer.
+// Appends a trailing zero, even in case of truncation, but the function
+// returns the full line length.
+// If |buffer| is NULL, does not write but returns required size.
+static int format_listener(alistener* l, char* buffer, size_t buffer_len) {
+    // Format is simply:
+    //
+    //  <device-serial> " " <local-name> " " <remote-name> "\n"
+    //
+    int local_len = strlen(l->local_name);
+    int connect_len = strlen(l->connect_to);
+    int serial_len = strlen(l->transport->serial);
+
+    if (buffer != NULL) {
+        snprintf(buffer, buffer_len, "%s %s %s\n",
+                l->transport->serial, l->local_name, l->connect_to);
+    }
+    // NOTE: snprintf() on Windows returns -1 in case of truncation, so
+    // return the computed line length instead.
+    return local_len + connect_len + serial_len + 3;
+}
+
+// Write the list of current listeners (network redirections) into a
+// user-provided buffer. Appends a trailing zero, even in case of
+// trunctaion, but return the full size in bytes.
+// If |buffer| is NULL, does not write but returns required size.
+static int format_listeners(char* buf, size_t buflen)
+{
+    alistener* l;
+    int result = 0;
+    for (l = listener_list.next; l != &listener_list; l = l->next) {
+        // Ignore special listeners like those for *smartsocket*
+        if (l->connect_to[0] == '*')
+          continue;
+        int len = format_listener(l, buf, buflen);
+        // Ensure there is space for the trailing zero.
+        result += len;
+        if (buf != NULL) {
+          buf += len;
+          buflen -= len;
+          if (buflen <= 0)
+              break;
+        }
+    }
+    return result;
+}
+
+static int remove_listener(const char *local_name, atransport* transport)
 {
     alistener *l;
 
     for (l = listener_list.next; l != &listener_list; l = l->next) {
-        if (!strcmp(local_name, l->local_name) &&
-            !strcmp(connect_to, l->connect_to) &&
-            l->transport && l->transport == transport) {
-
-            listener_disconnect(l, transport);
+        if (!strcmp(local_name, l->local_name)) {
+            listener_disconnect(l, l->transport);
             return 0;
         }
     }
-
     return -1;
 }
 
-static int install_listener(const char *local_name, const char *connect_to, atransport* transport)
+static void remove_all_listeners(void)
+{
+    alistener *l, *l_next;
+    for (l = listener_list.next; l != &listener_list; l = l_next) {
+        l_next = l->next;
+        // Never remove smart sockets.
+        if (l->connect_to[0] == '*')
+            continue;
+        listener_disconnect(l, l->transport);
+    }
+}
+
+// error/status codes for install_listener.
+typedef enum {
+  INSTALL_STATUS_OK = 0,
+  INSTALL_STATUS_INTERNAL_ERROR = -1,
+  INSTALL_STATUS_CANNOT_BIND = -2,
+  INSTALL_STATUS_CANNOT_REBIND = -3,
+} install_status_t;
+
+static install_status_t install_listener(const char *local_name,
+                                         const char *connect_to,
+                                         atransport* transport,
+                                         int no_rebind)
 {
     alistener *l;
 
@@ -751,12 +828,17 @@ static int install_listener(const char *local_name, const char *connect_to, atra
 
                 /* can't repurpose a smartsocket */
             if(l->connect_to[0] == '*') {
-                return -1;
+                return INSTALL_STATUS_INTERNAL_ERROR;
+            }
+
+                /* can't repurpose a listener if 'no_rebind' is true */
+            if (no_rebind) {
+                return INSTALL_STATUS_CANNOT_REBIND;
             }
 
             cto = strdup(connect_to);
             if(cto == 0) {
-                return -1;
+                return INSTALL_STATUS_INTERNAL_ERROR;
             }
 
             //printf("rebinding '%s' to '%s'\n", local_name, connect_to);
@@ -767,7 +849,7 @@ static int install_listener(const char *local_name, const char *connect_to, atra
                 l->transport = transport;
                 add_transport_disconnect(l->transport, &l->disconnect);
             }
-            return 0;
+            return INSTALL_STATUS_OK;
         }
     }
 
@@ -804,11 +886,11 @@ static int install_listener(const char *local_name, const char *connect_to, atra
         l->disconnect.func   = listener_disconnect;
         add_transport_disconnect(transport, &l->disconnect);
     }
-    return 0;
+    return INSTALL_STATUS_OK;
 
 nomem:
     fatal("cannot allocate listener");
-    return 0;
+    return INSTALL_STATUS_INTERNAL_ERROR;
 }
 
 #ifdef HAVE_WIN32_PROC
@@ -905,6 +987,33 @@ void start_device_log(void)
 #endif
 
 #if ADB_HOST
+
+#ifdef WORKAROUND_BUG6558362
+#include <sched.h>
+#define AFFINITY_ENVVAR "ADB_CPU_AFFINITY_BUG6558362"
+void adb_set_affinity(void)
+{
+   cpu_set_t cpu_set;
+   const char* cpunum_str = getenv(AFFINITY_ENVVAR);
+   char* strtol_res;
+   int cpu_num;
+
+   if (!cpunum_str || !*cpunum_str)
+       return;
+   cpu_num = strtol(cpunum_str, &strtol_res, 0);
+   if (*strtol_res != '\0')
+     fatal("bad number (%s) in env var %s. Expecting 0..n.\n", cpunum_str, AFFINITY_ENVVAR);
+
+   sched_getaffinity(0, sizeof(cpu_set), &cpu_set);
+   D("orig cpu_set[0]=0x%08lx\n", cpu_set.__bits[0]);
+   CPU_ZERO(&cpu_set);
+   CPU_SET(cpu_num, &cpu_set);
+   sched_setaffinity(0, sizeof(cpu_set), &cpu_set);
+   sched_getaffinity(0, sizeof(cpu_set), &cpu_set);
+   D("new cpu_set[0]=0x%08lx\n", cpu_set.__bits[0]);
+}
+#endif
+
 int launch_server(int server_port)
 {
 #ifdef HAVE_WIN32_PROC
@@ -913,6 +1022,7 @@ int launch_server(int server_port)
     /* message since the pipe handles must be inheritable, we use a     */
     /* security attribute                                               */
     HANDLE                pipe_read, pipe_write;
+    HANDLE                stdout_handle, stderr_handle;
     SECURITY_ATTRIBUTES   sa;
     STARTUPINFO           startup;
     PROCESS_INFORMATION   pinfo;
@@ -931,6 +1041,26 @@ int launch_server(int server_port)
     }
 
     SetHandleInformation( pipe_read, HANDLE_FLAG_INHERIT, 0 );
+
+    /* Some programs want to launch an adb command and collect its output by
+     * calling CreateProcess with inheritable stdout/stderr handles, then
+     * using read() to get its output. When this happens, the stdout/stderr
+     * handles passed to the adb client process will also be inheritable.
+     * When starting the adb server here, care must be taken to reset them
+     * to non-inheritable.
+     * Otherwise, something bad happens: even if the adb command completes,
+     * the calling process is stuck while read()-ing from the stdout/stderr
+     * descriptors, because they're connected to corresponding handles in the
+     * adb server process (even if the latter never uses/writes to them).
+     */
+    stdout_handle = GetStdHandle( STD_OUTPUT_HANDLE );
+    stderr_handle = GetStdHandle( STD_ERROR_HANDLE );
+    if (stdout_handle != INVALID_HANDLE_VALUE) {
+        SetHandleInformation( stdout_handle, HANDLE_FLAG_INHERIT, 0 );
+    }
+    if (stderr_handle != INVALID_HANDLE_VALUE) {
+        SetHandleInformation( stderr_handle, HANDLE_FLAG_INHERIT, 0 );
+    }
 
     ZeroMemory( &startup, sizeof(startup) );
     startup.cb = sizeof(startup);
@@ -1008,8 +1138,10 @@ int launch_server(int server_port)
         dup2(fd[1], STDERR_FILENO);
         adb_close(fd[1]);
 
+        char str_port[30];
+        snprintf(str_port, sizeof(str_port), "%d",  server_port);
         // child process
-        int result = execl(path, "adb", "fork-server", "server", NULL);
+        int result = execl(path, "adb", "-P", str_port, "fork-server", "server", NULL);
         // this should not return
         fprintf(stderr, "OOPS! execl returned %d, errno: %d\n", result, errno);
     } else  {
@@ -1052,6 +1184,32 @@ void build_local_name(char* target_str, size_t target_size, int server_port)
 }
 
 #if !ADB_HOST
+
+static void drop_capabilities_bounding_set_if_needed() {
+#ifdef ALLOW_ADBD_ROOT
+    char value[PROPERTY_VALUE_MAX];
+    property_get("ro.debuggable", value, "");
+    if (strcmp(value, "1") == 0) {
+        return;
+    }
+#endif
+    int i;
+    for (i = 0; prctl(PR_CAPBSET_READ, i, 0, 0, 0) >= 0; i++) {
+        if ((i == CAP_SETUID) || (i == CAP_SETGID)) {
+            // CAP_SETUID CAP_SETGID needed by /system/bin/run-as
+            continue;
+        }
+        int err = prctl(PR_CAPBSET_DROP, i, 0, 0, 0);
+
+        // Some kernels don't have file capabilities compiled in, and
+        // prctl(PR_CAPBSET_DROP) returns EINVAL. Don't automatically
+        // die when we see such misconfigured kernels.
+        if ((err < 0) && (errno != EINVAL)) {
+            exit(1);
+        }
+    }
+}
+
 static int should_drop_privileges() {
 #ifndef ALLOW_ADBD_ROOT
     return 1;
@@ -1106,6 +1264,10 @@ int adb_main(int is_daemon, int server_port)
 
 #if ADB_HOST
     HOST = 1;
+
+#ifdef WORKAROUND_BUG6558362
+    if(is_daemon) adb_set_affinity();
+#endif
     usb_vendors_init();
     usb_init();
     local_init(DEFAULT_ADB_LOCAL_TRANSPORT_PORT);
@@ -1113,7 +1275,7 @@ int adb_main(int is_daemon, int server_port)
 
     char local_name[30];
     build_local_name(local_name, sizeof(local_name), server_port);
-    if(install_listener(local_name, "*smartsocket*", NULL)) {
+    if(install_listener(local_name, "*smartsocket*", NULL, 0)) {
         exit(1);
     }
 #else
@@ -1136,11 +1298,13 @@ int adb_main(int is_daemon, int server_port)
     /* don't run as root if we are running in secure mode */
     if (should_drop_privileges()) {
         struct __user_cap_header_struct header;
-        struct __user_cap_data_struct cap;
+        struct __user_cap_data_struct cap[2];
 
         if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) != 0) {
             exit(1);
         }
+
+        drop_capabilities_bounding_set_if_needed();
 
         /* add extra groups:
         ** AID_ADB to access the USB driver
@@ -1169,18 +1333,21 @@ int adb_main(int is_daemon, int server_port)
             exit(1);
         }
 
+        memset(&header, 0, sizeof(header));
+        memset(cap, 0, sizeof(cap));
+
         /* set CAP_SYS_BOOT capability, so "adb reboot" will succeed */
-        header.version = _LINUX_CAPABILITY_VERSION;
+        header.version = _LINUX_CAPABILITY_VERSION_3;
         header.pid = 0;
-        cap.effective = cap.permitted = (1 << CAP_SYS_BOOT);
-        cap.inheritable = 0;
-        capset(&header, &cap);
+        cap[CAP_TO_INDEX(CAP_SYS_BOOT)].effective |= CAP_TO_MASK(CAP_SYS_BOOT);
+        cap[CAP_TO_INDEX(CAP_SYS_BOOT)].permitted |= CAP_TO_MASK(CAP_SYS_BOOT);
+        capset(&header, cap);
 
         D("Local port disabled\n");
     } else {
         char local_name[30];
         build_local_name(local_name, sizeof(local_name), server_port);
-        if(install_listener(local_name, "*smartsocket*", NULL)) {
+        if(install_listener(local_name, "*smartsocket*", NULL, 0)) {
             exit(1);
         }
     }
@@ -1474,24 +1641,63 @@ int handle_host_request(char *service, transport_type ttype, char* serial, int r
     }
 #endif // ADB_HOST
 
-    if(!strncmp(service,"forward:",8) || !strncmp(service,"killforward:",12)) {
+    if(!strcmp(service,"list-forward")) {
+        // Create the list of forward redirections.
+        char header[9];
+        int buffer_size = format_listeners(NULL, 0);
+        // Add one byte for the trailing zero.
+        char* buffer = malloc(buffer_size+1);
+        (void) format_listeners(buffer, buffer_size+1);
+        snprintf(header, sizeof header, "OKAY%04x", buffer_size);
+        writex(reply_fd, header, 8);
+        writex(reply_fd, buffer, buffer_size);
+        free(buffer);
+        return 0;
+    }
+
+    if (!strcmp(service,"killforward-all")) {
+        remove_all_listeners();
+        adb_write(reply_fd, "OKAYOKAY", 8);
+        return 0;
+    }
+
+    if(!strncmp(service,"forward:",8) ||
+       !strncmp(service,"killforward:",12)) {
         char *local, *remote, *err;
         int r;
         atransport *transport;
 
         int createForward = strncmp(service,"kill",4);
+        int no_rebind = 0;
 
-        local = service + (createForward ? 8 : 12);
-        remote = strchr(local,';');
-        if(remote == 0) {
-            sendfailmsg(reply_fd, "malformed forward spec");
-            return 0;
+        local = strchr(service, ':') + 1;
+
+        // Handle forward:norebind:<local>... here
+        if (createForward && !strncmp(local, "norebind:", 9)) {
+            no_rebind = 1;
+            local = strchr(local, ':') + 1;
         }
 
-        *remote++ = 0;
-        if((local[0] == 0) || (remote[0] == 0) || (remote[0] == '*')){
-            sendfailmsg(reply_fd, "malformed forward spec");
-            return 0;
+        remote = strchr(local,';');
+
+        if (createForward) {
+            // Check forward: parameter format: '<local>;<remote>'
+            if(remote == 0) {
+                sendfailmsg(reply_fd, "malformed forward spec");
+                return 0;
+            }
+
+            *remote++ = 0;
+            if((local[0] == 0) || (remote[0] == 0) || (remote[0] == '*')){
+                sendfailmsg(reply_fd, "malformed forward spec");
+                return 0;
+            }
+        } else {
+            // Check killforward: parameter format: '<local>'
+            if (local[0] == 0) {
+                sendfailmsg(reply_fd, "malformed forward spec");
+                return 0;
+            }
         }
 
         transport = acquire_one_transport(CS_ANY, ttype, serial, &err);
@@ -1501,9 +1707,9 @@ int handle_host_request(char *service, transport_type ttype, char* serial, int r
         }
 
         if (createForward) {
-            r = install_listener(local, remote, transport);
+            r = install_listener(local, remote, transport, no_rebind);
         } else {
-            r = remove_listener(local, remote, transport);
+            r = remove_listener(local, transport);
         }
         if(r == 0) {
                 /* 1st OKAY is connect, 2nd OKAY is status */
@@ -1512,7 +1718,18 @@ int handle_host_request(char *service, transport_type ttype, char* serial, int r
         }
 
         if (createForward) {
-            sendfailmsg(reply_fd, (r == -1) ? "cannot rebind smartsocket" : "cannot bind socket");
+            const char* message;
+            switch (r) {
+              case INSTALL_STATUS_CANNOT_BIND:
+                message = "cannot bind to socket";
+                break;
+              case INSTALL_STATUS_CANNOT_REBIND:
+                message = "cannot rebind existing socket";
+                break;
+              default:
+                message = "internal error";
+            }
+            sendfailmsg(reply_fd, message);
         } else {
             sendfailmsg(reply_fd, "cannot remove listener");
         }
