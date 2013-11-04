@@ -72,12 +72,12 @@
 #define AID_CLAT          1029  /* clat part of nat464 */
 #define AID_LOOP_RADIO    1030  /* loop radio devices */
 #define AID_MEDIA_DRM     1031  /* MediaDrm plugins */
-#define AID_AUDIT         1032  /* audit daemon */
-#define AID_THEMEMAN      1300  /* theme manager */
 #define AID_PACKAGE_INFO  1032  /* access to installed package details */
 #define AID_SDCARD_PICS   1033  /* external storage photos access */
 #define AID_SDCARD_AV     1034  /* external storage audio/video access */
 #define AID_SDCARD_ALL    1035  /* access all users external storage */
+#define AID_AUDIT         1036  /* audit daemon */
+#define AID_THEMEMAN      1300  /* theme manager */
 
 #define AID_SHELL         2000  /* adb and debug shell user */
 #define AID_CACHE         2001  /* cache access */
