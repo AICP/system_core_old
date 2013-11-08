@@ -4,10 +4,14 @@ ifneq ($(BUILD_TINY_ANDROID),true)
 
 LOCAL_PATH := $(call my-dir)
 
+ifneq ($(USE_DEVICE_SPECIFIC_LIBHEALTHD),true)
+
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES := healthd_board_default.cpp
 LOCAL_MODULE := libhealthd.default
 include $(BUILD_STATIC_LIBRARY)
+
+endif
 
 include $(CLEAR_VARS)
 
