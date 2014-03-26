@@ -18,7 +18,9 @@
 
 namespace android {
 
+#ifdef STE_HARDWARE
 Flattenable::~Flattenable() {
 }
+#endif
 
 }; // namespace android
