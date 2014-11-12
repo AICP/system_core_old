@@ -65,6 +65,7 @@ int usage(void)
             "       [ --board <boardname> ]\n"
             "       [ --base <address> ]\n"
             "       [ --pagesize <pagesize> ]\n"
+            "       [ --ramdisk_offset <address> ]\n"
             "       [ --dt <filename> ]\n"
             "       -o|--output <filename>\n"
             );
@@ -73,7 +74,7 @@ int usage(void)
 
 
 
-static unsigned char padding[16384] = { 0, };
+static unsigned char padding[131072] = { 0, };
 
 int write_padding(int fd, unsigned pagesize, unsigned itemsize)
 {
@@ -156,8 +157,9 @@ int main(int argc, char **argv)
             board = val;
         } else if(!strcmp(arg,"--pagesize")) {
             pagesize = strtoul(val, 0, 10);
-            if ((pagesize != 2048) && (pagesize != 4096)
-                && (pagesize != 8192) && (pagesize != 16384)) {
+            if ((pagesize != 2048) && (pagesize != 4096) && (pagesize != 8192)
+                    && (pagesize != 16384) && (pagesize != 32768)
+                    && (pagesize != 65536) && (pagesize != 131072)) {
                 fprintf(stderr,"error: unsupported page size %d\n", pagesize);
                 return -1;
             }
