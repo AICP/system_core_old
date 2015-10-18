@@ -10,9 +10,8 @@ import /init.${ro.hardware}.rc
 import /init.usb.configfs.rc
 import /init.${ro.zygote}.rc
 
-# Include CM's extra init file
-import /init.cm.rc
-
+# Include AICP's extra init file
+import /init.aicp.rc
 
 on early-init
     # Set init and its forked children's oom_adj.
@@ -654,4 +653,3 @@ service flash_recovery /system/bin/install-recovery.sh
 # update recovery if enabled
 on property:persist.sys.recovery_update=true
     start flash_recovery
-
