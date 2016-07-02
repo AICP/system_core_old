@@ -156,7 +156,7 @@ static struct frame batt_anim_frames[] = {
     {
         .disp_time = 750,
         .min_capacity = 80,
-        .level_only = true,
+        .level_only = false,
         .surface = NULL,
     },
     {
@@ -183,6 +183,7 @@ enum {
     BLUE_LED = 0x01 << 2,
 };
 
+#ifndef NO_CHARGER_LED
 struct led_ctl {
     int color;
     const char *path;
@@ -203,6 +204,7 @@ struct soc_led_color_mapping soc_leds[3] = {
     {90, RED_LED | GREEN_LED},
     {100, GREEN_LED},
 };
+#endif
 
 static struct charger charger_state;
 static struct healthd_config *healthd_config;
@@ -211,6 +213,7 @@ static int char_width;
 static int char_height;
 static bool minui_inited;
 
+#ifndef NO_CHARGER_LED
 static int set_tricolor_led(int on, int color)
 {
     int fd, i;
@@ -257,6 +260,7 @@ static int set_battery_soc_leds(int soc)
 
     return 0;
 }
+#endif
 
 /* current time in milliseconds */
 static int64_t curr_time_ms(void)
@@ -608,6 +612,8 @@ static void process_key(struct charger *charger, int code, int64_t now)
                    accordingly. */
                 if (property_get_bool("ro.enable_boot_charger_mode", false)) {
                     LOGW("[%" PRId64 "] booting from charger mode\n", now);
+                    healthd_board_mode_charger_set_backlight(false);
+                    gr_fb_blank(true);
                     property_set("sys.boot_from_charger_mode", "1");
                 } else {
                     if (charger->batt_anim->capacity >= charger->boot_min_cap) {
@@ -665,14 +671,17 @@ static void handle_input_state(struct charger *charger, int64_t now)
 
 static void handle_power_supply_state(struct charger *charger, int64_t now)
 {
+#ifndef NO_CHARGER_LED
     static int old_soc = 0;
     int soc = 0;
+#endif
 
     if (!charger->have_battery_state)
         return;
 
     healthd_board_mode_charger_battery_update(batt_prop);
 
+#ifndef NO_CHARGER_LED
     if (batt_prop && batt_prop->batteryLevel >= 0) {
         soc = batt_prop->batteryLevel;
     }
@@ -681,6 +690,7 @@ static void handle_power_supply_state(struct charger *charger, int64_t now)
         old_soc = soc;
         set_battery_soc_leds(soc);
     }
+#endif
 
     if (!charger->charger_connected) {
 

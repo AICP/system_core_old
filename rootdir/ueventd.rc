@@ -98,3 +98,4 @@ subsystem adf
 
 # DVB API device nodes
 /dev/dvb*                 0660   root       system
+

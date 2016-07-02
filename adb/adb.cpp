@@ -54,8 +54,6 @@ int HOST = 0;
 
 #if !ADB_HOST
 const char *adb_device_banner = "device";
-
-int recovery_mode = 0;
 #endif
 
 void fatal(const char *fmt, ...)
@@ -196,8 +194,6 @@ void adb_trace_init() {
 
 #if !ADB_HOST
     start_device_log();
-
-    recovery_mode = (strcmp(adb_device_banner, "recovery") == 0);
 #endif
 }
 
@@ -923,7 +919,7 @@ int handle_host_request(char *service, transport_type ttype, char* serial, int r
     if(!strncmp(service,"get-state",strlen("get-state"))) {
         transport = acquire_one_transport(CS_ANY, ttype, serial, NULL);
         SendOkay(reply_fd);
-        SendProtocolString(reply_fd, transport->connection_state_name());
+        SendProtocolString(reply_fd, transport ? transport->connection_state_name() : "unknown");
         return 0;
     }
 #endif // ADB_HOST

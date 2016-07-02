@@ -63,6 +63,7 @@
 #include "util.h"
 #include "ueventd.h"
 #include "watchdogd.h"
+#include "vendor_init.h"
 
 struct selabel_handle *sehandle;
 struct selabel_handle *sehandle_prop;
@@ -535,6 +536,9 @@ static void msg_restart(const char *name)
 
 void handle_control_message(const char *msg, const char *arg)
 {
+    if (!vendor_handle_control_message(msg, arg))
+        return;
+
     if (!strcmp(msg,"start")) {
         msg_start(arg);
     } else if (!strcmp(msg,"stop")) {
@@ -638,7 +642,7 @@ static int wait_for_coldboot_done_action(int nargs, char **args) {
     // Any longer than 1s is an unreasonable length of time to delay booting.
     // If you're hitting this timeout, check that you didn't make your
     // sepolicy regular expressions too expensive (http://b/19899875).
-    if (wait_for_file(COLDBOOT_DONE, 1)) {
+    if (wait_for_file(COLDBOOT_DONE, 5)) {
         ERROR("Timed out waiting for %s\n", COLDBOOT_DONE);
     }
 
@@ -814,7 +818,9 @@ static void export_kernel_boot_props() {
         { "ro.boot.baseband",   "ro.baseband",   "unknown", },
         { "ro.boot.bootloader", "ro.bootloader", "unknown", },
         { "ro.boot.hardware",   "ro.hardware",   "unknown", },
+#ifndef IGNORE_RO_BOOT_REVISION
         { "ro.boot.revision",   "ro.revision",   "0", },
+#endif
     };
     for (size_t i = 0; i < ARRAY_SIZE(prop_map); i++) {
         char value[PROP_VALUE_MAX];

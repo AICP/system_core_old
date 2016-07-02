@@ -21,6 +21,8 @@ on early-init
     # Set the security context of /adb_keys if present.
     restorecon /adb_keys
 
+    mount debugfs /sys/kernel/debug /sys/kernel/debug mode=755
+
     start ueventd
 
 on init
@@ -144,34 +146,44 @@ on init
     # sets up initial cpusets for ActivityManager
     mkdir /dev/cpuset
     mount cpuset none /dev/cpuset
-    mkdir /dev/cpuset/foreground
-    mkdir /dev/cpuset/foreground/boost
-    mkdir /dev/cpuset/background
-    # system-background is for system tasks that should only run on
-    # little cores, not on bigs
-    # to be used only by init, so don't change the permissions
-    mkdir /dev/cpuset/system-background
+
     # this ensures that the cpusets are present and usable, but the device's
     # init.rc must actually set the correct cpus
+    mkdir /dev/cpuset/foreground
     write /dev/cpuset/foreground/cpus 0
-    write /dev/cpuset/foreground/boost/cpus 0
-    write /dev/cpuset/background/cpus 0
-    write /dev/cpuset/system-background/cpus 0
     write /dev/cpuset/foreground/mems 0
+    mkdir /dev/cpuset/foreground/boost
+    write /dev/cpuset/foreground/boost/cpus 0
     write /dev/cpuset/foreground/boost/mems 0
+    mkdir /dev/cpuset/background
+    write /dev/cpuset/background/cpus 0
     write /dev/cpuset/background/mems 0
+
+    # system-background is for system tasks that should only run on
+    # little cores, not on bigs
+    # to be used only by init, so don't change system-bg permissions
+    mkdir /dev/cpuset/system-background
+    write /dev/cpuset/system-background/cpus 0
     write /dev/cpuset/system-background/mems 0
+
+    # change permissions for all cpusets we'll touch at runtime
     chown system system /dev/cpuset
     chown system system /dev/cpuset/foreground
     chown system system /dev/cpuset/foreground/boost
     chown system system /dev/cpuset/background
+    chown system system /dev/cpuset/system-background
     chown system system /dev/cpuset/tasks
     chown system system /dev/cpuset/foreground/tasks
     chown system system /dev/cpuset/foreground/boost/tasks
     chown system system /dev/cpuset/background/tasks
+    chown system system /dev/cpuset/system-background/tasks
+
+    # set system-background to 0775 so SurfaceFlinger can touch it
+    chmod 0775 /dev/cpuset/system-background
     chmod 0664 /dev/cpuset/foreground/tasks
     chmod 0664 /dev/cpuset/foreground/boost/tasks
     chmod 0664 /dev/cpuset/background/tasks
+    chmod 0664 /dev/cpuset/system-background/tasks
     chmod 0664 /dev/cpuset/tasks
 
 
@@ -649,7 +661,6 @@ service surfaceflinger /system/bin/surfaceflinger
     user system
     group graphics drmrpc
     onrestart restart zygote
-    writepid /dev/cpuset/system-background/tasks
 
 service drm /system/bin/drmserver
     class main
@@ -670,7 +681,7 @@ service defaultcrypto /system/bin/vdc --wait cryptfs mountdefaultencrypted
     # encryption) or trigger_restart_min_framework (other encryption)
 
 # One shot invocation to encrypt unencrypted volumes
-service encrypt /system/bin/vdc --wait cryptfs enablecrypto inplace default
+service encrypt /system/bin/vdc --wait cryptfs enablecrypto inplace default noui
     disabled
     oneshot
     # vold will set vold.decrypt to trigger_restart_framework (default
@@ -682,6 +693,7 @@ service bootanim /system/bin/bootanimation
     group graphics audio
     disabled
     oneshot
+    writepid /dev/cpuset/system-background/tasks
 
 service gatekeeperd /system/bin/gatekeeperd /data/misc/gatekeeper
     class late_start
@@ -755,10 +767,10 @@ on property:persist.logd.logpersistd=logcatd
     # all exec/services are called with umask(077), so no gain beyond 0700
     mkdir /data/misc/logd 0700 logd log
     # logd for write to /data/misc/logd, log group for read from pstore (-L)
-    exec - logd log -- /system/bin/logcat -L -b all -v threadtime -v usec -v printable -D -f /data/misc/logd/logcat -r 64 -n 256
+    exec - logd log -- /system/bin/logcat -L -b all -v threadtime -v usec -v printable -D -f /data/misc/logd/logcat -r 1024 -n 256
     start logcatd
 
-service logcatd /system/bin/logcat -b all -v threadtime -v usec -v printable -D -f /data/misc/logd/logcat -r 64 -n 256
+service logcatd /system/bin/logcat -b all -v threadtime -v usec -v printable -D -f /data/misc/logd/logcat -r 1024 -n 256
     class late_start
     disabled
     # logd for write to /data/misc/logd, log group for read from log daemon

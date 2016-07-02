@@ -64,6 +64,14 @@ ifneq ($(TARGET_IGNORE_RO_BOOT_SERIALNO),)
 LOCAL_CFLAGS += -DIGNORE_RO_BOOT_SERIALNO
 endif
 
+ifneq ($(TARGET_IGNORE_RO_BOOT_REVISION),)
+LOCAL_CFLAGS += -DIGNORE_RO_BOOT_REVISION
+endif
+
+ifneq ($(TARGET_INIT_UMOUNT_AND_FSCK_IS_UNSAFE),)
+LOCAL_CFLAGS += -DUMOUNT_AND_FSCK_IS_UNSAFE
+endif
+
 LOCAL_MODULE:= init
 LOCAL_C_INCLUDES += \
     external/zlib \
@@ -81,7 +89,6 @@ LOCAL_STATIC_LIBRARIES := \
     liblogwrap \
     libcutils \
     libbase \
-    libext4_utils_static \
     libutils \
     liblog \
     libc \

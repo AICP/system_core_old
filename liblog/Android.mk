@@ -30,6 +30,8 @@ else
 liblog_sources := logd_write_kern.c
 endif
 
+liblog_sources += log_event_write.c
+
 # some files must not be compiled when building against Mingw
 # they correspond to features not used by our host development tools
 # which are also hard or even impossible to port to native Win32
