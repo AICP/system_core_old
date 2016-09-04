@@ -33,6 +33,7 @@ int create_socket(const char *name, int type, mode_t perm,
 
 bool read_file(const char* path, std::string* content);
 int write_file(const char* path, const char* content);
+int write_file_follow(const char* path, const char* content);
 
 time_t gettime();
 uint64_t gettime_ns();
@@ -59,7 +60,7 @@ void remove_link(const char *oldpath, const char *newpath);
 int wait_for_file(const char *filename, int timeout);
 void open_devnull_stdio(void);
 void import_kernel_cmdline(bool in_qemu,
-                           std::function<void(const std::string&, const std::string&, bool)>);
+                           const std::function<void(const std::string&, const std::string&, bool)>&);
 int make_dir(const char *path, mode_t mode);
 int restorecon(const char *pathname);
 int restorecon_recursive(const char *pathname);
