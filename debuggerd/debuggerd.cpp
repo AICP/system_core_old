@@ -314,6 +314,7 @@ static int read_request(int fd, debugger_request_t* out_request) {
             out_request->tid, out_request->pid);
       return -1;
     }
+    enable_etb_trace(cr);
   } else if (cr.uid == 0
             || (cr.uid == AID_SYSTEM && msg.action == DEBUGGER_ACTION_DUMP_BACKTRACE)) {
     // Only root or system can ask us to attach to any process and dump it explicitly.
