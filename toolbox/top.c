@@ -31,7 +31,6 @@
 
 #include <ctype.h>
 #include <dirent.h>
-#include <errno.h>
 #include <grp.h>
 #include <inttypes.h>
 #include <pwd.h>
@@ -39,7 +38,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
 
 #include <cutils/sched_policy.h>
@@ -182,11 +180,6 @@ int top_main(int argc, char *argv[]) {
     new_procs = old_procs = NULL;
 
     read_procs();
-
-    // Pause 250ms to get better data and avoid divide by zero later (http://b/32478213).
-    struct timespec ts = { .tv_sec = 0, .tv_nsec = 250000000 };
-    TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
-
     while ((iterations == -1) || (iterations-- > 0)) {
         old_procs = new_procs;
         num_old_procs = num_new_procs;
