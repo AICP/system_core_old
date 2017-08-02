@@ -463,9 +463,14 @@ static int32_t MapCentralDirectory0(int fd, const char* debug_file_name,
    * Grab the CD offset and size, and the number of entries in the
    * archive and verify that they look reasonable.
    */
-  if (eocd->cd_start_offset + eocd->cd_size > eocd_offset) {
+  if (static_cast<off64_t>(eocd->cd_start_offset) + eocd->cd_size > eocd_offset) {
     ALOGW("Zip: bad offsets (dir %" PRIu32 ", size %" PRIu32 ", eocd %" PRId64 ")",
         eocd->cd_start_offset, eocd->cd_size, static_cast<int64_t>(eocd_offset));
+#if defined(__ANDROID__)
+    if (eocd->cd_start_offset + eocd->cd_size <= eocd_offset) {
+      android_errorWriteLog(0x534e4554, "31251826");
+    }
+#endif
     return kInvalidOffset;
   }
   if (eocd->num_records == 0) {
@@ -575,15 +580,18 @@ static int32_t ParseZipArchive(ZipArchive* archive) {
   const uint8_t* const cd_end = cd_ptr + cd_length;
   const uint8_t* ptr = cd_ptr;
   for (uint16_t i = 0; i < num_entries; i++) {
+    if (ptr > cd_end - sizeof(CentralDirectoryRecord)) {
+      ALOGW("Zip: ran off the end (at %" PRIu16 ")", i);
+#if defined(__ANDROID__)
+      android_errorWriteLog(0x534e4554, "36392138");
+#endif
+      return -1;
+    }
+
     const CentralDirectoryRecord* cdr =
         reinterpret_cast<const CentralDirectoryRecord*>(ptr);
     if (cdr->record_signature != CentralDirectoryRecord::kSignature) {
       ALOGW("Zip: missed a central dir sig (at %" PRIu16 ")", i);
-      return -1;
-    }
-
-    if (ptr + sizeof(CentralDirectoryRecord) > cd_end) {
-      ALOGW("Zip: ran off the end (at %" PRIu16 ")", i);
       return -1;
     }
 
