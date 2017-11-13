@@ -650,7 +650,7 @@ void healthd_mode_charger_init(struct healthd_config* config) {
     ret = res_create_multi_display_surface(anim->animation_file.c_str(), &scale_count, &scale_fps,
                                            &scale_frames);
     if (ret < 0) {
-        LOGE("Cannot load battery_scale image\n");
+        LOGE("Cannot load battery_scale image, got result code %d\n", ret);
         anim->num_frames = 0;
         anim->num_cycles = 1;
     } else if (scale_count != anim->num_frames) {
