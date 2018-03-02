@@ -156,7 +156,8 @@ on init
     mount cgroup none /dev/cpuctl cpu
     chown system system /dev/cpuctl
     chown system system /dev/cpuctl/tasks
-    chmod 0666 /dev/cpuctl/tasks
+    chmod 0755 /dev/cpuctl
+    chmod 0644 /dev/cpuctl/tasks
     write /dev/cpuctl/cpu.rt_period_us 1000000
     write /dev/cpuctl/cpu.rt_runtime_us 950000
 
