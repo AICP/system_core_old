@@ -245,7 +245,6 @@ bool BatteryMonitor::update(void) {
     if (readFromFile(mHealthdConfig->batteryTechnologyPath, &buf) > 0)
         props.batteryTechnology = String8(buf.c_str());
 
-    unsigned int i;
     double MaxPower = 0;
 
     // Rescan for the available charger types
@@ -282,7 +281,7 @@ bool BatteryMonitor::update(void) {
         }
     }
 
-    for (i = 0; i < mChargerNames.size(); i++) {
+    for (size_t i = 0; i < mChargerNames.size(); i++) {
         String8 path;
         path.appendFormat("%s/%s/online", POWER_SUPPLY_SYSFS_PATH,
                           mChargerNames[i].string());
