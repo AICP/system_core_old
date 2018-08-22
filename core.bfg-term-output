@@ -1,0 +1,80 @@
+==========================================================================
+****************** TERMINAL OUTPUT OF THE COMMAND RUN ********************
+******************** THIS FILE IS MANUALLY CREATED ***********************
+==========================================================================
+
+premaca@SylviaLx /ws/Android/GzP/system $ java -jar /home/premaca/bfg-1.13.0.jar --strip-blobs-bigger-than 100M core
+
+Using repo : /ws/Android/GzP/system/core/.git
+
+Scanning packfile for large blobs: 121658
+Scanning packfile for large blobs completed in 1,553 ms.
+Found 1 blob ids for large blobs - biggest=229696508 smallest=229696508
+Total size (unpacked)=229696508
+Found 1650 objects to protect
+Found 3 commit-pointing refs : HEAD, refs/remotes/github/9.0, refs/remotes/m/9.0
+
+Protected commits
+-----------------
+
+These are your protected commits, and so their contents will NOT be altered:
+
+ * commit 0fac9018 (protected by 'HEAD')
+
+Cleaning
+--------
+
+Found 40390 commits
+Cleaning commits:       100% (40390/40390)
+Cleaning commits completed in 2,098 ms.
+
+Updating 2 Refs
+---------------
+
+	Ref                       Before     After
+	---------------------------------------------
+	HEAD                    | 0fac9018 | 7503d387
+	refs/remotes/github/9.0 | 927d6fc1 | 552d860d
+
+Updating references:    100% (2/2)
+...Ref update completed in 11 ms.
+
+Commit Tree-Dirt History
+------------------------
+
+	Earliest                                              Latest
+	|                                                          |
+	..........................................................DD
+
+	D = dirty commits (file tree fixed)
+	m = modified commits (commit message or parents changed)
+	. = clean commits (no changes to file tree)
+
+	                        Before     After
+	-------------------------------------------
+	First modified commit | 150db124 | ecbcdafc
+	Last dirty commit     | e242a97d | cd89e6b1
+
+Deleted files
+-------------
+
+	Filename     Git id
+	--------------------------------
+	libartd.so | 70352dbb (219.1 MB)
+
+
+In total, 1475 object ids were changed. Full details are logged here:
+
+	/ws/Android/GzP/system/core.bfg-report/2018-08-22/13-27-41
+
+BFG run is complete! When ready, run: git reflog expire --expire=now --all && git gc --prune=now --aggressive
+
+
+--
+You can rewrite history in Git - don't let Trump do it for real!
+Trump's administration has lied consistently, to make people give up on ever
+being told the truth. Don't give up: https://www.theguardian.com/us-news/trump-administration
+--
+
+
+premaca@SylviaLx /ws/Android/GzP/system $
