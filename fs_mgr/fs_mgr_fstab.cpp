@@ -100,6 +100,7 @@ static struct flag_list fs_mgr_flags[] = {
     {"quota", MF_QUOTA},
     {"eraseblk=", MF_ERASEBLKSIZE},
     {"logicalblk=", MF_LOGICALBLKSIZE},
+    {"resize", MF_RESIZE },
     {"defaults", 0},
     {0, 0},
 };

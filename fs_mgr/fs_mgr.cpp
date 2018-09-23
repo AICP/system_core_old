@@ -64,6 +64,7 @@
 #define F2FS_FSCK_BIN   "/system/bin/fsck.f2fs"
 #define MKSWAP_BIN      "/system/bin/mkswap"
 #define TUNE2FS_BIN     "/system/bin/tune2fs"
+#define RESIZE2FS_BIN   "/system/bin/resize2fs"
 
 #define FSCK_LOG_FILE   "/dev/fscklogs/log"
 
@@ -395,6 +396,39 @@ static void tune_encrypt(const char* blk_device, const struct fstab_rec* rec,
     }
 }
 
+static void resize_fs(const char *blk_device, char *fs_type) {
+    int status;
+    int ret;
+
+    if (strncmp(fs_type, "ext", 3) != 0) {
+        LERROR << "Unable to resize " << blk_device
+               << " because of unsuported type: " << fs_type;
+        return;
+    }
+
+    if (access(RESIZE2FS_BIN, X_OK) != 0) {
+        LERROR << "Unable to resize " << blk_device
+               << " because " << RESIZE2FS_BIN " is missing";
+        return;
+    }
+
+    const char *resize2fs_argv[] = {
+        RESIZE2FS_BIN,
+        "-f",
+        blk_device
+    };
+    LINFO << "Running " << RESIZE2FS_BIN << " -f " << blk_device;
+
+    ret = android_fork_execvp_ext(ARRAY_SIZE(resize2fs_argv),
+                                  const_cast<char **>(resize2fs_argv),
+                                  &status, true, LOG_KLOG,
+                                  false, NULL, NULL, 0);
+    if (ret < 0) {
+        /* No need to check for error in fork, we can't really handle it now */
+        LERROR << "Failed trying to run " << RESIZE2FS_BIN;
+    }
+}
+
 //
 // Prepare the filesystem on the given block device to be mounted.
 //
@@ -428,6 +462,12 @@ static int prepare_fs_for_mount(const char* blk_device, const struct fstab_rec* 
 
     if ((rec->fs_mgr_flags & MF_CHECK) ||
         (fs_stat & (FS_STAT_UNCLEAN_SHUTDOWN | FS_STAT_QUOTA_ENABLED))) {
+        check_fs(blk_device, rec->fs_type, rec->mount_point, &fs_stat);
+    }
+
+    if (rec->fs_mgr_flags & MF_RESIZE) {
+        resize_fs(blk_device, rec->fs_type);
+        // enforce a check after resizing
         check_fs(blk_device, rec->fs_type, rec->mount_point, &fs_stat);
     }
 
