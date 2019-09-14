@@ -164,6 +164,7 @@ cc_library {
             srcs: [
                 "Trace.cpp",
             ],
+            cflags: ["-DCHECK_SDK"],
         },
         linux: {
             header_libs: ["libbase_headers"],
