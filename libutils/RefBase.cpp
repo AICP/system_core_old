@@ -715,13 +715,23 @@ RefBase::~RefBase()
         }
     } else if (mRefs->mStrong.load(std::memory_order_relaxed) == INITIAL_STRONG_VALUE) {
         // We never acquired a strong reference on this object.
+#ifdef CHECK_SDK
+#include <android/api-level.h>
+        // In Android Q this also fails for objects with 0 weak references.
+        // Restore old behavior if the SDK version precedes Q.
+        if ((android_get_application_target_sdk_version() >= __ANDROID_API_Q__) || (mRefs->mWeak.load() != 0)) {
+#endif
 #if DEBUG_REFBASE_DESTRUCTION
-        // Treating this as fatal is prone to causing boot loops. For debugging, it's
-        // better to treat as non-fatal.
-        ALOGD("RefBase: Explicit destruction, weak count = %d (in %p)", mRefs->mWeak.load(), this);
-        CallStack::logStack(LOG_TAG);
+            // Treating this as fatal is prone to causing boot loops. For debugging, it's
+            // better to treat as non-fatal.
+            ALOGD("RefBase: Explicit destruction, weak count = %d (in %p)", mRefs->mWeak.load(), this);
+            CallStack::logStack(LOG_TAG);
 #else
-        LOG_ALWAYS_FATAL("RefBase: Explicit destruction, weak count = %d", mRefs->mWeak.load());
+            LOG_ALWAYS_FATAL("RefBase: Explicit destruction, weak count = %d", mRefs->mWeak.load());
+#endif
+#ifdef CHECK_SDK
+	}
+        delete mRefs;
 #endif
     }
     // For debugging purposes, clear mRefs.  Ineffective against outstanding wp's.
