@@ -41,6 +41,7 @@
 #include <android-base/parseint.h>
 #include <android-base/stringprintf.h>
 #include <android-base/strings.h>
+#include <cutils/sockets.h>
 
 #if !defined(_WIN32)
 #include <signal.h>
@@ -898,6 +899,24 @@ static int adb_sideload_install(const char* filename, bool rescue_mode) {
     int64_t xfer = 0;
     int last_percent = -1;
     while (true) {
+        fd_set fds;
+        struct timeval tv;
+        FD_ZERO(&fds);
+        FD_SET(static_cast<cutils_socket_t>(device_fd), &fds);
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+        int rc = select(device_fd+1, &fds, NULL, NULL, &tv);
+        size_t diff = xfer - last_xfer;
+        if (rc == 0 || diff >= (1*MB)) {
+            spin_index = (spin_index+1) % spinlen;
+            printf("\rserving: '%s' %4umb %.2fx %c", filename,
+                    (unsigned)xfer/(1*MB), (double)xfer/sb.st_size, spinner[spin_index]);
+            fflush(stdout);
+            last_xfer = xfer;
+        }
+        if (rc == 0) {
+            continue;
+        }
         if (!ReadFdExactly(device_fd, buf, 8)) {
             fprintf(stderr, "adb: failed to read command: %s\n", strerror(errno));
             return -1;
