@@ -192,6 +192,9 @@ std::vector<std::string> ListPartitions(FastbootDevice* device) {
 }
 
 bool GetDeviceLockStatus() {
+    if(android::base::GetBoolProperty("ro.fastbootd.mock_unlocked", false))
+        return false;
+
     std::string cmdline;
     // Return lock status true if unable to read kernel command line.
     if (!android::base::ReadFileToString("/proc/cmdline", &cmdline)) {
