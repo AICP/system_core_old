@@ -29,5 +29,13 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef __INIT_VENDOR__H__
 #define __INIT_VENDOR__H__
+
+#include <string>
+
 extern void vendor_load_properties(void);
+
+#ifdef TARGET_CREATE_DEVICE_SYMLINKS
+extern void vendor_create_device_symlinks(int partNum, std::string partName, std::vector<std::string>& links);
+#endif
+
 #endif /* __INIT_VENDOR__H__ */

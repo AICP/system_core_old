@@ -29,9 +29,17 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "vendor_init.h"
 
+
 /* init vendor override stubs */
 
 __attribute__ ((weak))
 void vendor_load_properties()
 {
 }
+
+#ifdef TARGET_CREATE_DEVICE_SYMLINKS
+__attribute__ ((weak))
+void vendor_create_device_symlinks(int, std::string, std::vector<std::string>&)
+{
+}
+#endif
