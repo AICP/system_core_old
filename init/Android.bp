@@ -256,7 +256,10 @@ cc_binary {
     name: "init_second_stage",
     recovery_available: true,
     stem: "init",
-    defaults: ["init_defaults"],
+    defaults: [
+        "init_defaults",
+        "vendor_init_defaults",
+    ],
     static_libs: ["libinit"],
     required: [
         "e2fsdroid",
@@ -288,7 +291,9 @@ cc_binary {
 cc_binary {
     name: "init_first_stage_soong",
     stem: "init_vendor",
-
+    defaults: [
+        "vendor_init_defaults",
+    ],
     srcs: [
         "block_dev_initializer.cpp",
         "devices.cpp",
