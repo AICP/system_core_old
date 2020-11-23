@@ -269,7 +269,10 @@ void Service::Reap(const siginfo_t& siginfo) {
             // The new behavior in Android R is to kill these process groups in all cases.  The
             // 'true' parameter instructions KillProcessGroup() to report a warning message where it
             // detects a difference in behavior has occurred.
-            KillProcessGroup(SIGKILL, true);
+#ifdef DISABLE_KILLING_ONESHOT_SERVICE
+            if (!(flags_ & SVC_ONESHOT))
+#endif
+                KillProcessGroup(SIGKILL, true);
         }
     }
 
