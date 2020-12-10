@@ -297,6 +297,7 @@ void ColdBoot::Run() {
 }
 
 static UeventdConfiguration GetConfiguration() {
+<<<<<<< HEAD   (87236d init.rc: Disable native stats collection service)
     auto hardware = android::base::GetProperty("ro.hardware", "");
     std::vector<std::string> legacy_paths{"/vendor/ueventd.rc", "/odm/ueventd.rc",
                                           "/ueventd." + hardware + ".rc"};
@@ -315,6 +316,14 @@ static UeventdConfiguration GetConfiguration() {
                         << path;
             }
         }
+=======
+    // TODO: Remove these legacy paths once Android S is no longer supported.
+    if (android::base::GetIntProperty("ro.product.first_api_level", 10000) <= __ANDROID_API_S__) {
+        auto hardware = android::base::GetProperty("ro.hardware", "");
+        return ParseConfig({"/system/etc/ueventd.rc", "/vendor/ueventd.rc", "/odm/ueventd.rc",
+                            "/ueventd." + hardware + ".rc", "/vendor/etc/ueventd." + hardware + ".rc",
+                            "/vendor/etc/ueventd.rc", "/odm/etc/ueventd.rc"});
+>>>>>>> CHANGE (64906e rootdir: Look for ODM & vendor ueventd entries in ETC too.)
     }
 
     return ParseConfig(canonical);
