@@ -16,6 +16,23 @@
       "message": "fw_base and AE parts are merged.... ",
       "revId": "53dd858a6296b5c326bb8c0f141672c21fe28eed",
       "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c20d83cd_33579397",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 774
+      },
+      "writtenOn": "2020-12-13T14:15:30Z",
+      "side": 1,
+      "message": "then lets merge 😄",
+      "revId": "53dd858a6296b5c326bb8c0f141672c21fe28eed",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
     }
   ]
 }
