@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e999f4d8_fc00767c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3
+      },
+      "writtenOn": "2020-12-13T14:11:08Z",
+      "side": 1,
+      "message": "fw_base and AE parts are merged.... ",
+      "revId": "53dd858a6296b5c326bb8c0f141672c21fe28eed",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
