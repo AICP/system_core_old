@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "ccfd630f_a434e2bf",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3
+      },
+      "writtenOn": "2020-12-24T13:16:27Z",
+      "side": 1,
+      "message": "This change only is enough: https://gerrit.aicp-rom.com/c/AICP/system_core/+/106887",
+      "revId": "5b34ef8f73947fded9f0d9aa7c18c1e57c23776e",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
