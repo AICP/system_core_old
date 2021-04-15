@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8f0b4afe_f06abf88",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1416
+      },
+      "writtenOn": "2021-04-15T17:37:03Z",
+      "side": 1,
+      "message": "\"This is the frameworks/base part of the change; changes to system/core\nare also required.\" from change #109298",
+      "revId": "2230992304c137bd8a113b612c31ffbbf76457ee",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
