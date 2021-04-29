@@ -16,6 +16,23 @@
       "message": "\"This is the frameworks/base part of the change; changes to system/core\nare also required.\" from change #109298",
       "revId": "2230992304c137bd8a113b612c31ffbbf76457ee",
       "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "bb824a2a_0d6f52b7",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1416
+      },
+      "writtenOn": "2021-04-29T13:36:54Z",
+      "side": 1,
+      "message": "Observing \"StatsCompanionService: Could not yet find statsd to tell it that StatsCompanion is alive.\"\nchange seems to be working",
+      "revId": "2230992304c137bd8a113b612c31ffbbf76457ee",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
     }
   ]
 }
