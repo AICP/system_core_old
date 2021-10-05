@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "e3de5460_3a18b902",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3
+      },
+      "writtenOn": "2021-10-05T16:50:03Z",
+      "side": 1,
+      "message": "full history: https://gitlab.com/docHD/system_core/-/commits/r11.1_r46",
+      "revId": "936abaaa4e468e92349d696d89f8c7962c8273e6",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
