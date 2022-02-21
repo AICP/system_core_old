@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a66a6d6c_7a48b3d1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3
+      },
+      "writtenOn": "2022-02-21T05:54:36Z",
+      "side": 1,
+      "message": "Needed for boot on Op8T (kebab).",
+      "revId": "3d14f6ea2f051005f9f269c89eda90ce738bd25e",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
