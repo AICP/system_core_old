@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "a575e768_ee3722ed",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3
+      },
+      "writtenOn": "2022-04-26T18:04:13Z",
+      "side": 1,
+      "message": "part of https://review.lineageos.org/q/topic:twelve-fbe-qcom-wrapped-key topic",
+      "revId": "b28ff88f785e476ff2a53fa5bfd008e88b4ffcba",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
