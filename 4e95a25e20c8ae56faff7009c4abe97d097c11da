@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "33b449d3_8ee35138",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3
+      },
+      "writtenOn": "2022-06-02T21:27:08Z",
+      "side": 1,
+      "message": "part of https://review.lineageos.org/q/topic:hw-revision-override topic.",
+      "revId": "4e95a25e20c8ae56faff7009c4abe97d097c11da",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
