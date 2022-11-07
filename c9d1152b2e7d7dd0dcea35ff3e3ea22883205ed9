@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "22bb089c_a4e6cfdb",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1646
+      },
+      "writtenOn": "2022-11-07T18:32:10Z",
+      "side": 1,
+      "message": "we also need this to fully pass CTS with PIHooks",
+      "revId": "c9d1152b2e7d7dd0dcea35ff3e3ea22883205ed9",
+      "serverId": "9f904cbb-a964-4fab-a7dc-5cfc4d5c238b"
+    }
+  ]
+}
